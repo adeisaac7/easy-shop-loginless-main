@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -8,9 +8,12 @@ import { useToast } from '@/hooks/use-toast';
 import { Mail, ShoppingBag, User, Lock } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-export function Auth() {
+import { sendSignInLinkToEmail } from '../AuthService'; // Import the passwordless auth function
+
+const Auth = () => {
+  console.log('Auth component rendering');
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [password, setPassword] = useState(''); // Assuming you might still have password sign-in/signup tabs
   const [isLoading, setIsLoading] = useState(false);
   const { signInWithEmail, signInWithPassword, signUpWithPassword, signInWithGoogle, signInWithFacebook } = useAuth();
   const { toast } = useToast();
@@ -20,21 +23,20 @@ export function Auth() {
     setIsLoading(true);
 
     try {
-      const { error } = await signInWithEmail(email);
-      
-      if (error) {
+      // Basic email validation
+      if (!email || !/\S+@\S+\.\S+/.test(email)) {
         toast({
           variant: "destructive",
           title: "Error",
-          description: error.message,
+          description: "Please enter a valid email address.",
         });
-      } else {
-        toast({
-          title: "Check your email!",
-          description: "We've sent you a magic link to sign in.",
-        });
-        setEmail('');
+        setIsLoading(false);
+        return;
       }
+
+      await sendSignInLinkToEmail(email);
+      // Save email to local storage for later retrieval
+      localStorage.setItem('emailForSignIn', email);
     } catch (error) {
       toast({
         variant: "destructive",
@@ -356,52 +358,11 @@ export function Auth() {
                 </svg>
                 Sign up with Facebook
               </Button>
+
             </TabsContent>
 
             <TabsContent value="magic" className="space-y-4 mt-6">
-              <form onSubmit={handleMagicLink} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="magic-email">Email Address</Label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="magic-email"
-                      type="email"
-                      placeholder="Enter your email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="pl-10"
-                      required
-                    />
-                  </div>
-                </div>
-                <Button 
-                  type="submit" 
-                  className="w-full"
-                  disabled={isLoading}
-                >
-                  {isLoading ? 'Sending...' : 'Send Magic Link'}
-                </Button>
-                <div className="text-center text-xs text-muted-foreground">
-                  We'll send you a secure link to sign in without a password
-                </div>
-              </form>
-              
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
-                </div>
-              </div>
-              
-              <Button 
-                variant="outline" 
-                className="w-full"
-                onClick={handleGoogleAuth}
-                disabled={isLoading}
-              >
+               <form onSubmit={handleMagicLink} className="space-y-4">
                 <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
                   <path
                     d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -420,6 +381,48 @@ export function Auth() {
                     fill="#EA4335"
                   />
                 </svg>
+                <div className="space-y-2">
+                  <Label htmlFor="magic-email">Email Address</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="magic-email"
+                      type="email"
+                      placeholder="Enter your email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="pl-10"
+                      required
+                    />
+                  </div>
+                </div>
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={isLoading}
+                >
+                  {isLoading ? 'Sending...' : 'Send Magic Link'}
+                </Button>
+                <div className="text-center text-xs text-muted-foreground">
+                  We'll send you a secure link to sign in without a password
+                </div>
+              </form>
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+                </div>
+              </div>
+
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={handleGoogleAuth}
+                disabled={isLoading}
+              >
                 Continue with Google
               </Button>
               
